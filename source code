@@ -1,0 +1,185 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_SEATS 40
+
+typedef struct Ticket
+ {
+    char passengerName[50];
+    int seatNumber;
+    struct Ticket* next;
+} Ticket;
+
+typedef struct BusReservation 
+{
+    int seats[MAX_SEATS];
+    Ticket* head;
+} BusReservation;
+
+void initBus(BusReservation* bus)
+ {
+    bus->head = NULL;
+    for (int i = 0; i < MAX_SEATS; i++) {
+        bus->seats[i] = 0;
+    }
+}
+
+void bookTicket(BusReservation* bus, char name[], int seatNum) 
+{
+    if (seatNum < 1 || seatNum > MAX_SEATS || bus->seats[seatNum - 1]) {
+        printf("Seat %d is not available or invalid.\n", seatNum);
+        return;
+    }
+
+    bus->seats[seatNum - 1] = 1;
+
+    Ticket* newTicket = (Ticket*)malloc(sizeof(Ticket));
+    if (!newTicket) 
+{
+        printf("Memory allocation failed.\n");
+        return;
+    }
+
+    strcpy(newTicket->passengerName, name);
+    newTicket->seatNumber = seatNum;
+    newTicket->next = bus->head;
+    bus->head = newTicket;
+
+    printf("Booking Confirmed: %s -> Seat #%d\n", name, seatNum);
+}
+
+void cancelTicket(BusReservation* bus, int seatNum) 
+{
+    if (seatNum < 1 || seatNum > MAX_SEATS || bus->seats[seatNum - 1] == 0)
+ {
+        printf("Invalid seat or not booked.\n");
+        return;
+    }
+
+    bus->seats[seatNum - 1] = 0;
+    Ticket *temp = bus->head, *prev = NULL;
+
+    while (temp && temp->seatNumber != seatNum) 
+{
+        prev = temp;
+        temp = temp->next;
+    }
+
+    if (!temp) 
+{
+        printf("Booking not found.\n");
+        return;
+    }
+
+    if (!prev)
+        bus->head = temp->next;
+    else
+        prev->next = temp->next;
+
+    free(temp);
+    printf("Booking for seat #%d cancelled.\n", seatNum);
+}
+
+void displayBookings(BusReservation* bus) 
+{
+    if (!bus->head) 
+{
+        printf("No bookings found.\n");
+        return;
+    }
+
+    printf("\nList of Bookings:\n");
+    Ticket* temp = bus->head;
+    while (temp)
+ {
+        printf("- %s has booked seat #%d\n", temp->passengerName, temp->seatNumber);
+        temp = temp->next;
+    }
+}
+
+void displaySeatMap(BusReservation* bus) 
+{
+    int booked = 0;
+    printf("\nSeat Map (B = Booked, A = Available):\n");
+    for (int i = 0; i < MAX_SEATS; i++) 
+{
+        if (bus->seats[i]) 
+{
+            printf("[B%2d] ", i + 1);
+            booked++;
+        } 
+     else
+ {
+            printf("[A%2d] ", i + 1);
+        }
+
+        if ((i + 1) % 4 == 0) printf("\n"); // 4 seats per row
+    }
+
+    printf("\nTotal Seats: %d | Booked: %d | Available: %d\n", MAX_SEATS, booked, MAX_SEATS - booked);
+}
+
+int main()
+ {
+    BusReservation bus;
+    initBus(&bus);
+    int choice, seatNum;
+    char name[50];
+
+    do {
+        printf("\n==== Bus Ticket Reservation System ====\n");
+        printf("1. Book Ticket\n");
+        printf("2. Cancel Ticket\n");
+        printf("3. Display Bookings\n");
+        printf("4. Show Seat Map\n");
+        printf("5. Exit\n");
+        printf("Choose an option: ");
+        scanf("%d", &choice);
+        getchar(); 
+
+        switch (choice) 
+{
+            case 1:
+                printf("Enter Passenger Name: ");
+                fgets(name, sizeof(name), stdin);
+                name[strcspn(name, "\n")] = 0;
+
+                printf("Enter Seat Number (1-%d): ", MAX_SEATS);
+                scanf("%d", &seatNum);
+                bookTicket(&bus, name, seatNum);
+                break;
+
+            case 2:
+                printf("Enter Seat Number to Cancel: ");
+                scanf("%d", &seatNum);
+                cancelTicket(&bus, seatNum);
+                break;
+
+            case 3:
+                displayBookings(&bus);
+                break;
+
+            case 4:
+                displaySeatMap(&bus);
+                break;
+
+            case 5:
+                printf("Exiting... Have a nice day!\n");
+                break;
+
+            default:
+                printf("Invalid option. Please try again.\n");
+        }
+    } while (choice != 5);
+    Ticket* temp;
+    while (bus.head)
+ {
+        temp = bus.head;
+        bus.head = bus.head->next;
+        free(temp);
+    }
+
+    return 0;
+}
+ 
